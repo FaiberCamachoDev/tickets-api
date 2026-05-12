@@ -1,0 +1,32 @@
+
+services:
+    app:
+        build: .
+        ports:
+            - "8000:8000"
+        volumes:
+            - .:/var/www
+        environment:
+            - APP_ENV=local
+        depends_on:
+            - sqlserver
+        networks:
+            - tickets-net
+
+    sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        environment:
+            ACCEPT_EULA: "Y"
+            SA_PASSWORD: "YourStrong!Passw0rd"
+            MSSQL_PID: "Express"
+        ports:
+            - "1433:1433"
+        volumes:
+            - sqldata:/var/opt/mssql
+        networks:
+            - tickets-net
+
+volumes:
+    sqldata:
+networks:
+    tickets-net:
