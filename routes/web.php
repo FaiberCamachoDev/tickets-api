@@ -1,17 +1,14 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return response()->json([
+        'name' => config('app.name'),
+        'message' => 'Api is running',
+        'status' => 'Success'
+    ]);
 });
 
-Route::middleware([
-    'auth:sanctum',
-    config('jetstream.auth_session'),
-    'verified',
-])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-});
+Route::get('/dashboard', [DashboardController::class, 'index']);

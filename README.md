@@ -1,58 +1,181 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Tickets API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+REST API for technical support ticket management and device assignment. Built with Laravel 13, PHP 8.3, SQL Server 2022, and token-based authentication (Sanctum).
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Layer | Technology |
+|---|---|
+| Framework | Laravel 13.7 |
+| Language | PHP 8.3 |
+| Database | SQL Server 2022 (Docker) |
+| Authentication | Laravel Sanctum (API tokens) |
+| Error monitoring | Sentry |
+| Alerts | Discord webhooks |
+| Frontend | Blade + Tailwind CSS (dashboard) |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Getting started
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Requirements
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Docker + Docker Compose
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### First-time setup
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+docker compose up --build -d
+docker compose exec app php artisan migrate:fresh --seed
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The server will be available at `http://localhost:8000`.
 
-## Contributing
+### Daily usage
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+docker compose up -d        # start
+docker compose down         # stop
+docker compose logs -f app  # stream logs
+```
 
-## Code of Conduct
+> **Note:** `pdo_sqlsrv` is only available inside the container. Never run `php artisan` directly on the host — always prefix with `docker compose exec app`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## API Endpoints
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Base URL: `http://localhost:8000/api`
+
+All resource endpoints require the following headers:
+```
+Authorization: Bearer <token>
+Accept: application/json
+```
+
+### Authentication
+
+| Method | Route | Description |
+|---|---|---|
+| `POST` | `/register` | Create a new account |
+| `POST` | `/login` | Obtain an API token |
+| `POST` | `/logout` | Revoke current token |
+| `GET` | `/me` | Get authenticated user profile |
+
+### Tickets
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/tickets` | List tickets (paginated; filters: `status`, `priority`) |
+| `POST` | `/tickets` | Create a ticket |
+| `GET` | `/tickets/{id}` | Get a ticket |
+| `PATCH` | `/tickets/{id}` | Update a ticket |
+| `DELETE` | `/tickets/{id}` | Delete a ticket (soft delete) |
+
+**Valid values:**
+- `status`: `open` · `in_progress` · `resolved` · `closed`
+- `priority`: `low` · `medium` · `high`
+- `category`: `incident` · `device_assignment` · `control`
+
+### Devices
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/devices` | List devices (filters: `status`, `type`) |
+| `POST` | `/devices/assign` | Assign a device to a user |
+
+**Valid values:**
+- `status`: `available` · `assigned` · `maintenance`
+- `type`: `pc` · `laptop` · `mobile` · `tablet` · `other`
+
+---
+
+## Testing with Postman
+
+Import `docs/postman/tickets-api.postman_collection.json` into Postman.
+
+The collection includes all 11 routes with example request bodies. The **Login** and **Register** requests include a test script that automatically saves the token to `{{token}}` — no manual copy-pasting required.
+
+Seeded test user credentials:
+```
+email:    test@example.com
+password: password
+```
+
+---
+
+## Dashboard
+
+Metrics view available in the browser:
+
+```
+http://localhost:8000/dashboard
+```
+
+Shows: ticket and device totals, distribution by status and priority, 7-day creation trend, and recent activity log.
+
+---
+
+## Useful commands
+
+```bash
+# Reset database with fresh seed data
+docker compose exec app php artisan migrate:fresh --seed
+
+# Interactive console
+docker compose exec app php artisan tinker
+
+# Push an edited file to the container (edits to existing files don't sync automatically)
+docker cp <local-file> tickets-api-app-1:/var/www/<path-in-container>
+
+# Query recent activity
+docker compose exec app php artisan tinker --execute="
+App\Models\ActivityLog::latest()->take(5)->get(['action','description'])->each(fn(\$l) => dump(\$l->toArray()));
+"
+
+# Stream activity log
+docker compose exec app tail -f storage/logs/api-activity-$(date +%Y-%m-%d).log
+```
+
+---
+
+## Environment variables
+
+| Variable | Description |
+|---|---|
+| `DB_HOST` | SQL Server host (default: `sqlserver` inside Docker) |
+| `DB_DATABASE` | Database name (`tickets_db`) |
+| `SENTRY_LARAVEL_DSN` | Sentry DSN for exception tracking |
+| `DISCORD_WEBHOOK_URL` | Discord webhook for 500 and 429 alerts |
+
+Copy `.env.example` to `.env` and fill in the values before starting the project.
+
+---
+
+## Documentation
+
+Each project phase has its own documentation in `docs/`. See the [full index](docs/README.md).
+
+---
+
+## Observability architecture
+
+```
+Request
+  │
+  ├── LogActivity middleware ──► api-activity.log  (access log)
+  │
+  ├── Exception handler ────────► api-errors.log   (errors)
+  │                               Discord webhook  (500 + 429)
+  │                               Sentry           (full stacktrace)
+  │
+  └── Services ─────────────────► activity_logs    (business events)
+```
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT

@@ -54,8 +54,26 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => explode(',', (string) env('LOG_STACK', 'single,api_errors')),
             'ignore_exceptions' => false,
+        ],
+
+        // Registra cada request HTTP a la API (access log rotado diariamente)
+        'api_activity' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/api-activity.log'),
+            'level'  => 'info',
+            'days'   => 30,
+            'replace_placeholders' => true,
+        ],
+
+        // Solo errores críticos de la API, separados del log general
+        'api_errors' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/api-errors.log'),
+            'level'  => 'error',
+            'days'   => 60,
+            'replace_placeholders' => true,
         ],
 
         'single' => [
