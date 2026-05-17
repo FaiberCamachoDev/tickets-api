@@ -31,3 +31,8 @@ Thumbs.db
 /storage/app/
 /storage/framework/
 /docs/postman/
+
+# Claude Code
+CLAUDE.md
+projectContext.md
+/.claude/
